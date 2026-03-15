@@ -8,16 +8,23 @@ import { confirm, select } from '@inquirer/prompts';
 
 const program = new Command();
 
-async function runNativeWindSetup(projectPath: string, packageManager?: string) {
-  console.log(chalk.blue(`\n Setting up NativeWind in: ${chalk.bold(projectPath)}`));
+async function runNativeWindSetup(projectPath: string, packageManager?: string, iconLibrary: string = 'expo-symbols') {
+  console.log(chalk.blue(`\n Setting up NativeWind and Icons in: ${chalk.bold(projectPath)}`));
 
   try {
     // 1. Install Dependencies (only if not handled by a consolidated pass)
-    if (packageManager) {
+    if (packageManager && packageManager !== 'none') {
       console.log(chalk.cyan(`\n Installing dependencies using ${packageManager}...`));
       const installCmd = packageManager === 'npm' ? 'install' : (packageManager === 'yarn' || packageManager === 'bun' ? 'add' : 'add');
       
-      await execa(packageManager, [installCmd, 'nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context', 'expo-symbols'], { 
+      const deps = ['nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context'];
+      if (iconLibrary === 'lucide') {
+        deps.push('lucide-react-native', 'react-native-svg');
+      } else {
+        deps.push('expo-symbols');
+      }
+
+      await execa(packageManager, [installCmd, ...deps], { 
         cwd: projectPath,
         stdio: 'inherit' 
       });
@@ -125,9 +132,10 @@ export default function RootLayout() {
     await fs.writeFile(path.join(appPath, '_layout.tsx'), layoutContent);
 
     // app/index.tsx
+    const isLucide = iconLibrary === 'lucide';
     const indexContent = `import { Text, View, Pressable } from "react-native";
 import { useColorScheme } from "nativewind";
-import { SymbolView } from "expo-symbols";
+${isLucide ? 'import { Sun, Moon } from "lucide-react-native";' : 'import { SymbolView } from "expo-symbols";'}
 
 export default function HomeScreen() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -142,11 +150,16 @@ export default function HomeScreen() {
         onPress={toggleColorScheme}
         className="w-16 h-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
       >
-        <SymbolView 
+        ${isLucide 
+          ? `{colorScheme === "dark" 
+            ? <Sun size={32} color="#eab308" /> 
+            : <Moon size={32} color="#084baf" />}`
+          : `<SymbolView 
           name={colorScheme === "dark" ? "sun.max.fill" : "moon.fill"} 
           size={32}
           tintColor={colorScheme === "dark" ? "#eab308" : "#084baf"}
-        />
+        />`
+        }
       </Pressable>
       
       <Text className="mt-4 text-slate-500 dark:text-slate-400">
@@ -205,7 +218,7 @@ export default function NotFoundScreen() {
 }`;
     await fs.writeFile(path.join(appPath, '+not-found.tsx'), notFoundContent);
 
-    console.log(chalk.green('\n✨ Reset and NativeWind setup complete!'));
+    console.log(chalk.green('\n Reset and NativeWind setup complete!'));
   } catch (error: any) {
     console.error(chalk.red('\n❌ Error during setup:'));
     console.error(error.message);
@@ -226,6 +239,15 @@ program
     const setupNativeWind = await confirm({
       message: 'Do you want to setup NativeWind (Tailwind CSS) automatically?',
       default: true
+    });
+
+    const iconLibrary = await select({
+      message: 'Which icon library do you want to use?',
+      choices: [
+        { value: 'expo-symbols', name: 'Expo Symbols (Best for native iOS feel)' },
+        { value: 'lucide', name: 'Lucide Icons (Best for cross-platform)' }
+      ],
+      default: 'expo-symbols'
     });
 
     const packageManager = await select({
@@ -261,7 +283,7 @@ program
 
       // 3. Optional NativeWind Setup
       if (setupNativeWind) {
-        await runNativeWindSetup(projectPath); // Don't run install here
+        await runNativeWindSetup(projectPath, 'none', iconLibrary); // Don't run install here
       }
 
       // 4. Update package.json with extra dependencies
@@ -269,13 +291,23 @@ program
       const pkgPath = path.join(projectPath, 'package.json');
       const pkg = await fs.readJson(pkgPath);
       
-      pkg.dependencies = {
-        ...pkg.dependencies,
+      const extraDeps: Record<string, string> = {
         "nativewind": "latest",
         "tailwindcss": "3.4.1",
         "react-native-reanimated": "^3.16.1",
-        "react-native-safe-area-context": "4.12.0",
-        "expo-symbols": "latest"
+        "react-native-safe-area-context": "4.12.0"
+      };
+
+      if (iconLibrary === 'lucide') {
+        extraDeps["lucide-react-native"] = "latest";
+        extraDeps["react-native-svg"] = "latest";
+      } else {
+        extraDeps["expo-symbols"] = "latest";
+      }
+
+      pkg.dependencies = {
+        ...pkg.dependencies,
+        ...extraDeps
       };
       
       pkg.devDependencies = {
@@ -316,6 +348,15 @@ program
   .command('setup-nativewind')
   .description('Setup NativeWind in the current Expo project')
   .action(async () => {
+    const iconLibrary = await select({
+      message: 'Which icon library do you want to use?',
+      choices: [
+        { value: 'expo-symbols', name: 'Expo Symbols' },
+        { value: 'lucide', name: 'Lucide Icons' }
+      ],
+      default: 'expo-symbols'
+    });
+
     const packageManager = await select({
       message: 'Which package manager do you want to use for installation?',
       choices: [
@@ -327,7 +368,7 @@ program
       ],
       default: 'pnpm'
     });
-    await runNativeWindSetup(process.cwd(), packageManager);
+    await runNativeWindSetup(process.cwd(), packageManager, iconLibrary);
   });
 
 program.parse(process.argv);
