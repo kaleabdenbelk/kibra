@@ -10,8 +10,10 @@ Create a new Expo project from scratch.
 
 **Actions performed:**
 1.  **Git Initialization**: Runs `git init <project-name>`.
-2.  **Expo App Creation**: Runs `pnpx create-expo-app <project-name> --template tabs`.
-3.  **Automatic Setup**: Prompts to automatically run `setup-nativewind`.
+2.  **Package Manager Selection**: Prompts to choose between `pnpm`, `npm`, `yarn`, or `bun`.
+3.  **Expo App Creation**: Runs `create-expo-app` with `--no-install` to save time.
+4.  **Automatic Setup**: Prompts to automatically run `setup-nativewind`.
+5.  **Consolidated Installation**: Performs a single installation pass at the end, including all NativeWind and icon dependencies.
 
 ---
 

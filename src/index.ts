@@ -4,27 +4,31 @@ import chalk from 'chalk';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
-import inquirer from 'inquirer';
+import { confirm, select } from '@inquirer/prompts';
 
 const program = new Command();
 
-async function runNativeWindSetup(projectPath: string) {
-  console.log(chalk.blue(`\n🎨 Setting up NativeWind in: ${chalk.bold(projectPath)}`));
+async function runNativeWindSetup(projectPath: string, packageManager?: string) {
+  console.log(chalk.blue(`\n Setting up NativeWind in: ${chalk.bold(projectPath)}`));
 
   try {
-    // 1. Install Dependencies
-    console.log(chalk.cyan('\n📦 Installing NativeWind, Tailwind CSS, and Expo Symbols...'));
-    await execa('pnpm', ['add', 'nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context', 'expo-symbols'], { 
-      cwd: projectPath,
-      stdio: 'inherit' 
-    });
-    await execa('pnpm', ['add', '-D', 'babel-preset-expo'], { 
-      cwd: projectPath,
-      stdio: 'inherit' 
-    });
+    // 1. Install Dependencies (only if not handled by a consolidated pass)
+    if (packageManager) {
+      console.log(chalk.cyan(`\n Installing dependencies using ${packageManager}...`));
+      const installCmd = packageManager === 'npm' ? 'install' : (packageManager === 'yarn' || packageManager === 'bun' ? 'add' : 'add');
+      
+      await execa(packageManager, [installCmd, 'nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context', 'expo-symbols'], { 
+        cwd: projectPath,
+        stdio: 'inherit' 
+      });
+      await execa(packageManager, [installCmd, '-D', 'babel-preset-expo'], { 
+        cwd: projectPath,
+        stdio: 'inherit' 
+      });
+    }
 
     // 2. Create tailwind.config.js
-    console.log(chalk.cyan('\n📄 Creating tailwind.config.js...'));
+    console.log(chalk.cyan('\n Creating tailwind.config.js...'));
     const tailwindConfig = `/** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
@@ -42,7 +46,7 @@ module.exports = {
     await fs.writeFile(path.join(projectPath, 'tailwind.config.js'), tailwindConfig);
 
     // 3. Create global.css
-    console.log(chalk.cyan('\n📄 Creating global.css...'));
+    console.log(chalk.cyan('\n Creating global.css...'));
     const globalCss = `@tailwind base;
 @tailwind components;
 @tailwind utilities;`;
@@ -81,7 +85,7 @@ module.exports = {
     }
 
     // 5. Update metro.config.js
-    console.log(chalk.cyan('\n🔧 Updating metro.config.js...'));
+    console.log(chalk.cyan('\n Updating metro.config.js...'));
     const metroConfigPath = path.join(projectPath, 'metro.config.js');
     const metroConfigContent = `const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
@@ -92,13 +96,13 @@ module.exports = withNativeWind(config, { input: "./global.css" });`;
     await fs.writeFile(metroConfigPath, metroConfigContent);
 
     // 6. Fresh Start: Empty Folders
-    console.log(chalk.cyan('\n🧹 Resetting components, constants, and app folders...'));
+    console.log(chalk.cyan('\n Resetting components, constants, and app folders...'));
     await fs.emptyDir(path.join(projectPath, 'components'));
     await fs.emptyDir(path.join(projectPath, 'constants'));
     await fs.emptyDir(path.join(projectPath, 'app'));
 
     // 7. Inject Base Templates
-    console.log(chalk.cyan('\n📄 Injecting new base templates...'));
+    console.log(chalk.cyan('\n Injecting new base templates...'));
     const appPath = path.join(projectPath, 'app');
 
     // app/_layout.tsx
@@ -208,7 +212,6 @@ export default function NotFoundScreen() {
   }
 }
 
-
 program
   .name('expo-setup')
   .description('A CLI to setup Expo projects with NativeWind, Icons, and Theming')
@@ -220,42 +223,90 @@ program
   .action(async (projectName) => {
     const projectPath = path.resolve(process.cwd(), projectName);
 
-    const answers = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'setupNativeWind',
-        message: 'Do you want to setup NativeWind (Tailwind CSS) automatically?',
-        default: true
-      }
-    ]);
+    const setupNativeWind = await confirm({
+      message: 'Do you want to setup NativeWind (Tailwind CSS) automatically?',
+      default: true
+    });
 
-    console.log(chalk.blue(`\n🚀 Creating a new Expo project in: ${chalk.bold(projectPath)}`));
+    const packageManager = await select({
+      message: 'Which package manager do you want to use?',
+      choices: [
+        { value: 'pnpm', name: 'pnpm' },
+        { value: 'npm', name: 'npm' },
+        { value: 'yarn', name: 'yarn' },
+        { value: 'bun', name: 'bun' },
+        { value: 'none', name: 'None (Skip Installation)' }
+      ],
+      default: 'pnpm'
+    });
+
+    console.log(chalk.blue(`\n Creating a new Expo project in: ${chalk.bold(projectPath)}`));
 
     try {
       // 1. Git Initialization
-      console.log(chalk.cyan('\n📦 Initializing Git repository...'));
+      console.log(chalk.cyan('\nInitializing Git repository...'));
       await execa('git', ['init', projectName], { stdio: 'inherit' });
       console.log(chalk.green('✔ Git repository initialized.'));
 
-      // 2. Expo App Creation
-      console.log(chalk.cyan('\n📱 Creating Expo app using pnpm...'));
-      await execa('pnpx', ['create-expo-app', projectName, '--template', 'tabs', '--no-install'], { 
+      // 2. Expo App Creation (No Install)
+      console.log(chalk.cyan(`\n Creating Expo app using ${packageManager} (no-install)...`));
+      
+      const effectivePM = packageManager === 'none' ? 'npm' : packageManager;
+      const createCmd = effectivePM === 'pnpm' ? 'pnpx' : (effectivePM === 'bun' ? 'bunx' : 'npx');
+      
+      await execa(createCmd, ['create-expo-app', projectName, '--template', 'tabs', '--no-install'], { 
         stdio: 'inherit',
         env: { ...process.env, NPM_CONFIG_YES: 'true' } 
       });
 
       // 3. Optional NativeWind Setup
-      if (answers.setupNativeWind) {
-        await runNativeWindSetup(projectPath);
+      if (setupNativeWind) {
+        await runNativeWindSetup(projectPath); // Don't run install here
       }
+
+      // 4. Update package.json with extra dependencies
+      console.log(chalk.cyan('\n Injecting extra dependencies into package.json...'));
+      const pkgPath = path.join(projectPath, 'package.json');
+      const pkg = await fs.readJson(pkgPath);
       
-      console.log(chalk.green(`\n✨ Project ${chalk.bold(projectName)} created successfully.`));
-      console.log(chalk.yellow('\nNext steps:'));
-      console.log(`  cd ${projectName}`);
-      console.log(`  pnpm run start -c`);
+      pkg.dependencies = {
+        ...pkg.dependencies,
+        "nativewind": "latest",
+        "tailwindcss": "3.4.1",
+        "react-native-reanimated": "^3.16.1",
+        "react-native-safe-area-context": "4.12.0",
+        "expo-symbols": "latest"
+      };
+      
+      pkg.devDependencies = {
+        ...pkg.devDependencies,
+        "babel-preset-expo": "^12.0.0"
+      };
+
+      await fs.writeJson(pkgPath, pkg, { spaces: 2 });
+
+      // 5. Final Consolidated Installation
+      if (packageManager !== 'none') {
+        console.log(chalk.cyan(`\n Running final installation with ${packageManager}...`));
+        await execa(packageManager, ['install'], { 
+          cwd: projectPath,
+          stdio: 'inherit' 
+        });
+        
+        console.log(chalk.green(`\n Project ${chalk.bold(projectName)} created successfully.`));
+        console.log(chalk.yellow('\nNext steps:'));
+        console.log(`  cd ${projectName}`);
+        console.log(`  ${packageManager} run start -c`);
+      } else {
+        console.log(chalk.green(`\n Project ${chalk.bold(projectName)} setup complete (skipping installation).`));
+        console.log(chalk.yellow('\nNext steps:'));
+        console.log(`  cd ${projectName}`);
+        console.log('  [Install dependencies manually]');
+        console.log('  npm run start -c');
+      }
 
     } catch (error: any) {
-      console.error(chalk.red('\n❌ Error during project creation:'));
+      console.error(chalk.red('\n Error during project creation:'));
       console.error(error.message);
       process.exit(1);
     }
@@ -265,7 +316,18 @@ program
   .command('setup-nativewind')
   .description('Setup NativeWind in the current Expo project')
   .action(async () => {
-    await runNativeWindSetup(process.cwd());
+    const packageManager = await select({
+      message: 'Which package manager do you want to use for installation?',
+      choices: [
+        { value: 'pnpm', name: 'pnpm' },
+        { value: 'npm', name: 'npm' },
+        { value: 'yarn', name: 'yarn' },
+        { value: 'bun', name: 'bun' },
+        { value: 'none', name: 'None (Skip Installation)' }
+      ],
+      default: 'pnpm'
+    });
+    await runNativeWindSetup(process.cwd(), packageManager);
   });
 
 program.parse(process.argv);

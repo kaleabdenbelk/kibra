@@ -12,5 +12,5 @@
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "exclude": ["node_modules", "dist", "try"]
+  "exclude": ["node_modules", "dist", "try", "noin", "noins", "templetes"]
 }
