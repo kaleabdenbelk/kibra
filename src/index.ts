@@ -13,8 +13,8 @@ async function runNativeWindSetup(projectPath: string) {
 
   try {
     // 1. Install Dependencies
-    console.log(chalk.cyan('\n📦 Installing NativeWind and Tailwind CSS...'));
-    await execa('pnpm', ['add', 'nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context'], { 
+    console.log(chalk.cyan('\n📦 Installing NativeWind, Tailwind CSS, and Expo Symbols...'));
+    await execa('pnpm', ['add', 'nativewind@latest', 'tailwindcss@3.4.1', 'react-native-reanimated', 'react-native-safe-area-context', 'expo-symbols'], { 
       cwd: projectPath,
       stdio: 'inherit' 
     });
@@ -27,10 +27,15 @@ async function runNativeWindSetup(projectPath: string) {
     console.log(chalk.cyan('\n📄 Creating tailwind.config.js...'));
     const tailwindConfig = `/** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#084baf",
+      },
+    },
   },
   plugins: [],
 };`;
@@ -59,8 +64,6 @@ module.exports = {
             /return \{/,
             'return {\n    plugins: ["nativewind/babel"],'
           );
-        } else {
-          console.log(chalk.yellow('⚠️ Could not find plugins array in babel.config.js, skipping auto-injection.'));
         }
         await fs.writeFile(babelConfigPath, content);
       }
@@ -88,54 +91,123 @@ const config = getDefaultConfig(__dirname);
 module.exports = withNativeWind(config, { input: "./global.css" });`;
     await fs.writeFile(metroConfigPath, metroConfigContent);
 
-    // 6. Update app/_layout.tsx
-    console.log(chalk.cyan('\n🔧 Updating app/_layout.tsx...'));
-    const layoutPath = path.join(projectPath, 'app', '_layout.tsx');
-    if (await fs.pathExists(layoutPath)) {
-      let content = await fs.readFile(layoutPath, 'utf8');
-      if (!content.includes('../global.css')) {
-        content = `import "../global.css";\n` + content;
-        await fs.writeFile(layoutPath, content);
-      }
-    }
+    // 6. Fresh Start: Empty Folders
+    console.log(chalk.cyan('\n🧹 Resetting components, constants, and app folders...'));
+    await fs.emptyDir(path.join(projectPath, 'components'));
+    await fs.emptyDir(path.join(projectPath, 'constants'));
+    await fs.emptyDir(path.join(projectPath, 'app'));
 
-    // 7. Fix Themed Components (for Tabs template)
-    console.log(chalk.cyan('\n🔧 Patching components/Themed.tsx for NativeWind...'));
-    const themedPath = path.join(projectPath, 'components', 'Themed.tsx');
-    if (await fs.pathExists(themedPath)) {
-      let content = await fs.readFile(themedPath, 'utf8');
-      if (!content.includes('nativewind')) {
-        content = `import { cssInterop } from "nativewind";\n` + content;
-        const lastImportIndex = content.lastIndexOf('import');
-        const endOfImportLine = content.indexOf('\n', lastImportIndex);
-        content = content.slice(0, endOfImportLine + 1) + 
-                  `\ncssInterop(DefaultText, { className: "style" });\ncssInterop(DefaultView, { className: "style" });\n` + 
-                  content.slice(endOfImportLine + 1);
-        await fs.writeFile(themedPath, content);
-      }
-    }
+    // 7. Inject Base Templates
+    console.log(chalk.cyan('\n📄 Injecting new base templates...'));
+    const appPath = path.join(projectPath, 'app');
 
-    // 8. Cleanup duplicate .js files
-    console.log(chalk.cyan('\n🧹 Cleaning up duplicate .js files...'));
-    const appDir = path.join(projectPath, 'app');
-    if (await fs.pathExists(appDir)) {
-      const files = await fs.readdir(appDir);
-      for (const file of files) {
-        if (file.endsWith('.js')) {
-          const tsxFile = file.replace('.js', '.tsx');
-          if (files.includes(tsxFile)) {
-            await fs.remove(path.join(appDir, file));
-          }
-        }
-      }
-    }
+    // app/_layout.tsx
+    const layoutContent = `import "../global.css";
+import { ThemeProvider, DarkTheme, DefaultTheme } from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { useColorScheme } from "nativewind";
 
-    console.log(chalk.green('\n✨ NativeWind setup complete!'));
+export default function RootLayout() {
+  const { colorScheme } = useColorScheme();
+
+  return (
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="index" options={{ title: "Home" }} />
+      </Stack>
+    </ThemeProvider>
+  );
+}`;
+    await fs.writeFile(path.join(appPath, '_layout.tsx'), layoutContent);
+
+    // app/index.tsx
+    const indexContent = `import { Text, View, Pressable } from "react-native";
+import { useColorScheme } from "nativewind";
+import { SymbolView } from "expo-symbols";
+
+export default function HomeScreen() {
+  const { colorScheme, toggleColorScheme } = useColorScheme();
+
+  return (
+    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
+      <Text className="text-2xl font-bold text-primary dark:text-white mb-8">
+        Welcome to Compo
+      </Text>
+      
+      <Pressable 
+        onPress={toggleColorScheme}
+        className="w-16 h-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
+      >
+        <SymbolView 
+          name={colorScheme === "dark" ? "sun.max.fill" : "moon.fill"} 
+          size={32}
+          tintColor={colorScheme === "dark" ? "#eab308" : "#084baf"}
+        />
+      </Pressable>
+      
+      <Text className="mt-4 text-slate-500 dark:text-slate-400">
+        Toggle {colorScheme === "dark" ? "Light" : "Dark"} Mode
+      </Text>
+    </View>
+  );
+}`;
+    await fs.writeFile(path.join(appPath, 'index.tsx'), indexContent);
+
+    // app/+html.tsx
+    const htmlContent = `import { ScrollViewStyleReset } from 'expo-router/html';
+
+export default function Root({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <ScrollViewStyleReset />
+        <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+
+const responsiveBackground = \`
+body {
+  background-color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #000;
+  }
+}\`;`;
+    await fs.writeFile(path.join(appPath, '+html.tsx'), htmlContent);
+
+    // app/+not-found.tsx
+    const notFoundContent = `import { Link, Stack } from 'expo-router';
+import { Text, View } from 'react-native';
+
+export default function NotFoundScreen() {
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Oops!' }} />
+      <View className="flex-1 items-center justify-center p-5">
+        <Text className="text-xl font-bold">This screen doesn't exist.</Text>
+        <Link href="/" className="mt-4 py-4">
+          <Text className="text-sm text-primary">Go to home screen!</Text>
+        </Link>
+      </View>
+    </>
+  );
+}`;
+    await fs.writeFile(path.join(appPath, '+not-found.tsx'), notFoundContent);
+
+    console.log(chalk.green('\n✨ Reset and NativeWind setup complete!'));
   } catch (error: any) {
-    console.error(chalk.red('\n❌ Error during NativeWind setup:'));
+    console.error(chalk.red('\n❌ Error during setup:'));
     console.error(error.message);
   }
 }
+
 
 program
   .name('expo-setup')
@@ -167,7 +239,7 @@ program
 
       // 2. Expo App Creation
       console.log(chalk.cyan('\n📱 Creating Expo app using pnpm...'));
-      await execa('pnpx', ['create-expo-app', projectName, '--template', 'tabs'], { 
+      await execa('pnpx', ['create-expo-app', projectName, '--template', 'tabs', '--no-install'], { 
         stdio: 'inherit',
         env: { ...process.env, NPM_CONFIG_YES: 'true' } 
       });
