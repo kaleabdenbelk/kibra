@@ -1,12 +1,12 @@
-# Compo
+# Kibra
 
-A CLI tool to setup Expo projects with NativeWind, Icons, and Theming.
+The fastest way to build native-first Expo apps with NativeWind, Icons, and Kibra Theming.
 
 ## Commands
 
-### `create <project-name>`
+### `create <project-name>` (alias: `init`)
 
-Create a new Expo project from scratch.
+Create a new Expo project from scratch. You can also run it without the `create` keyword: `npx create-kibra-app my-new-app`.
 
 **Actions performed:**
 1.  **Git Initialization**: Runs `git init <project-name>`.
@@ -20,6 +20,19 @@ Create a new Expo project from scratch.
 ### `setup-nativewind`
 
 Configure NativeWind (Tailwind CSS) in an existing Expo project.
+
+---
+
+### `add <component>`
+
+Add a pre-styled component to your project. Available components: `button`, `card`, `input`.
+
+**Actions performed:**
+1.  **Ensure Directories**: Creates `components/` and `lib/` if they don't exist.
+2.  **Add Utility**: Creates `lib/utils.ts` and installs `clsx`, `tailwind-merge`, and `class-variance-authority` if they are missing.
+3.  **Inject Component**: Injects the component file into your `components/` folder.
+
+---
 
 #### 📦 Dependencies Installed
 - `nativewind@latest`
@@ -51,9 +64,16 @@ Before setup, the CLI **empties** the following directories to remove default Ex
 ## Usage
 
 ```bash
-# Run via pnpm
-pnpm run dev create my-new-app
+# Initialize a new project (shorthand)
+npx create-kibra-app my-new-app
 
-# Or setup in current directory
-pnpm run dev setup-nativewind
+# Or explicitly create it
+npx create-kibra-app create my-new-app
+
+# Add a component (Button, Card, Input)
+npx kibra add button
+npx kibra add card
+
+# Configure NativeWind in an existing project
+npx kibra setup-nativewind
 ```
