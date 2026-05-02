@@ -14,4 +14,4 @@ export const STABLE_VERSIONS = {
 	"tailwind-merge": "latest",
 };
 
-export const DEFAULT_REGISTRY_URL = "https://fugitora.github.io/nativix/dist-registry";
+export const DEFAULT_REGISTRY_URL = "https://kaleabdenbelk.github.io/kibra/dist-registry";
