@@ -7,6 +7,7 @@ on:
       - 'registry/**'
       - 'src/**'
       - 'package.json'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -42,7 +43,6 @@ jobs:
       run: |
         mkdir -p docs/dist-registry
         cp -r dist-registry/* docs/dist-registry/
-        # Optional: verify the files are there
         ls -R docs/dist-registry
 
     - name: Deploy to GitHub Pages
