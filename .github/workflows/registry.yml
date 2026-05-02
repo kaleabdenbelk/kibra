@@ -1,0 +1,63 @@
+name: Registry Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'registry/**'
+      - 'src/commands/build.ts'
+      - 'scripts/build-registry.ts'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build Registry
+      run: pnpm run build-registry
+
+    - name: Validate Registry
+      run: |
+        if [ ! -f dist-registry/index.json ]; then
+          echo "❌ index.json not found!"
+          exit 1
+        fi
+        echo "✅ Registry built successfully."
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        # We also want to include the dist-registry in the docs site
+        # so the showroom script can fetch them relative to site root
+    
+    # Custom step to copy registry into docs for deployment
+    - name: Prepare Docs Site
+      run: |
+        mkdir -p docs/dist-registry
+        cp -r dist-registry/* docs/dist-registry/
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs

@@ -1,0 +1,28 @@
+# Local test apps
+my-new-app/
+test-app/
+
+# Source code (we ship dist)
+src/
+scripts/
+
+# Build artifacts (except dist)
+dist-registry/
+*.tmp-*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Git
+.git/
+.gitignore
+.agent/
+.gemini/
+
+# Misc
+*.md
+!README.md
+!LICENSE.md

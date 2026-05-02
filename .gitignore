@@ -31,4 +31,10 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+# Registry
+dist-registry
+registry-index.json
+
+# Local Test Output
+components
+lib/utils.ts

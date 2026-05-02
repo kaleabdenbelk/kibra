@@ -1,6 +1,7 @@
-import { confirm, select } from '@inquirer/prompts';
+import { confirm, input, select } from "@inquirer/prompts";
 
 export const prompts = {
-  confirm,
-  select
+	confirm,
+	select,
+	input,
 };
