@@ -1,6 +1,6 @@
 {
 	"name": "kibra",
-	"version": "1.0.5",
+	"version": "1.0.4",
 	"description": "The high-performance component registry for Expo and React Native.",
 	"type": "module",
 	"main": "./dist/index.js",

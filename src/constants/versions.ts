@@ -14,4 +14,4 @@ export const STABLE_VERSIONS = {
 	"tailwind-merge": "latest",
 };
 
-export const DEFAULT_REGISTRY_URL = "https://kaleabdenbelk.github.io/kibra/dist-registry";
+export const DEFAULT_REGISTRY_URL = "https://bunamahber.me/kibra/dist-registry";
