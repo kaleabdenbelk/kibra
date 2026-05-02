@@ -5,11 +5,14 @@ on:
     branches: [ main ]
     paths:
       - 'registry/**'
-      - 'src/commands/build.ts'
-      - 'scripts/build-registry.ts'
+      - 'src/**'
+      - 'package.json'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,35 +32,21 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Build Registry
+    - name: Build CLI (Required for Registry Builder)
+      run: pnpm run build
+
+    - name: Build Registry JSONs
       run: pnpm run build-registry
 
-    - name: Validate Registry
-      run: |
-        if [ ! -f dist-registry/index.json ]; then
-          echo "❌ index.json not found!"
-          exit 1
-        fi
-        echo "✅ Registry built successfully."
-
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs
-        # We also want to include the dist-registry in the docs site
-        # so the showroom script can fetch them relative to site root
-    
-    # Custom step to copy registry into docs for deployment
     - name: Prepare Docs Site
       run: |
         mkdir -p docs/dist-registry
         cp -r dist-registry/* docs/dist-registry/
+        # Optional: verify the files are there
+        ls -R docs/dist-registry
 
-    - name: Deploy
+    - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs
