@@ -1,0 +1,16 @@
+{
+  "name": "input",
+  "type": "registry:ui",
+  "dependencies": [
+    "{{UTILS_ALIAS}}"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "ui/input.tsx",
+      "target": "components/ui/input.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from \"{{UTILS_ALIAS}}\";\nimport React from \"react\";\nimport { Text, TextInput, View } from \"react-native\";\n\ninterface InputProps extends React.ComponentPropsWithoutRef<typeof TextInput> {\n\tlabel?: string;\n\terror?: string;\n}\n\nconst Input = React.forwardRef<React.ElementRef<typeof TextInput>, InputProps>(\n\t({ className, label, error, ...props }, ref) => {\n\t\treturn (\n\t\t\t<View className=\"w-full space-y-2\">\n\t\t\t\t{label && (\n\t\t\t\t\t<Text className=\"text-sm font-medium text-slate-900 dark:text-slate-50\">\n\t\t\t\t\t\t{label}\n\t\t\t\t\t</Text>\n\t\t\t\t)}\n\t\t\t\t<TextInput\n\t\t\t\t\tref={ref}\n\t\t\t\t\tclassName={cn(\n\t\t\t\t\t\t\"flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:ring-offset-slate-950 dark:placeholder:text-slate-400\",\n\t\t\t\t\t\terror && \"border-red-500\",\n\t\t\t\t\t\tclassName,\n\t\t\t\t\t)}\n\t\t\t\t\taccessibilityLabel={props.accessibilityLabel || label}\n\t\t\t\t\taccessibilityHint={props.accessibilityHint || error}\n\t\t\t\t\t{...props}\n\t\t\t\t/>\n\t\t\t\t{error && <Text className=\"text-xs text-red-500\">{error}</Text>}\n\t\t\t</View>\n\t\t);\n\t},\n);\nInput.displayName = \"Input\";\n\nexport { Input };\n"
+    }
+  ]
+}

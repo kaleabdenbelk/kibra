@@ -1,0 +1,16 @@
+{
+  "name": "modal",
+  "type": "registry:ui",
+  "dependencies": [
+    "{{UTILS_ALIAS}}"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "ui/modal.tsx",
+      "target": "components/ui/modal.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from \"{{UTILS_ALIAS}}\";\nimport React, { useEffect } from \"react\";\nimport {\n\tBackHandler,\n\tModal as RNModal,\n\tPressable,\n\tText,\n\tView,\n} from \"react-native\";\nimport Animated, {\n\tFadeIn,\n\tFadeOut,\n\tSlideInBottom,\n\tSlideOutBottom,\n} from \"react-native-reanimated\";\n\ninterface ModalProps {\n\tvisible: boolean;\n\tonClose: () => void;\n\ttitle?: string;\n\tdescription?: string;\n\tchildren?: React.ReactNode;\n\tclassName?: string;\n}\n\n/**\n * Elite Modal component for Kibra.\n * Includes: \n * - Smooth Reanimated transitions\n * - A11y roles and focus management via RN Modal\n * - Backdrop click-to-close\n * - Hardware back button handling\n */\nexport function Modal({\n\tvisible,\n\tonClose,\n\ttitle,\n\tdescription,\n\tchildren,\n\tclassName,\n}: ModalProps) {\n\tuseEffect(() => {\n\t\tconst backHandler = BackHandler.addEventListener(\n\t\t\t\"hardwareBackPress\",\n\t\t\t() => {\n\t\t\t\tif (visible) {\n\t\t\t\t\tonClose();\n\t\t\t\t\treturn true;\n\t\t\t\t}\n\t\t\t\treturn false;\n\t\t\t},\n\t\t);\n\n\t\treturn () => backHandler.remove();\n\t}, [visible, onClose]);\n\n\treturn (\n\t\t<RNModal\n\t\t\ttransparent\n\t\t\tvisible={visible}\n\t\t\tonRequestClose={onClose}\n\t\t\tanimationType=\"none\" // We use Reanimated for custom transitions\n\t\t>\n\t\t\t<View className=\"flex-1 justify-end sm:justify-center\">\n\t\t\t\t{/* Backdrop */}\n\t\t\t\t<Animated.View\n\t\t\t\t\tentering={FadeIn}\n\t\t\t\t\texiting={FadeOut}\n\t\t\t\t\tclassName=\"absolute inset-0 bg-black/50\"\n\t\t\t\t>\n\t\t\t\t\t<Pressable className=\"flex-1\" onPress={onClose} accessibilityLabel=\"Close modal\" />\n\t\t\t\t</Animated.View>\n\n\t\t\t\t{/* Modal Content */}\n\t\t\t\t<Animated.View\n\t\t\t\t\tentering={SlideInBottom}\n\t\t\t\t\texiting={SlideOutBottom}\n\t\t\t\t\tclassName={cn(\n\t\t\t\t\t\t\"bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl p-6 shadow-xl\",\n\t\t\t\t\t\tclassName,\n\t\t\t\t\t)}\n\t\t\t\t\taccessibilityRole=\"alert\"\n\t\t\t\t\taria-modal=\"true\"\n\t\t\t\t>\n\t\t\t\t\t<View className=\"flex-col space-y-2 mb-4\">\n\t\t\t\t\t\t{title && (\n\t\t\t\t\t\t\t<Text className=\"text-xl font-bold text-slate-900 dark:text-slate-50\" accessibilityRole=\"header\">\n\t\t\t\t\t\t\t\t{title}\n\t\t\t\t\t\t\t</Text>\n\t\t\t\t\t\t)}\n\t\t\t\t\t\t{description && (\n\t\t\t\t\t\t\t<Text className=\"text-sm text-slate-500 dark:text-slate-400\">\n\t\t\t\t\t\t\t\t{description}\n\t\t\t\t\t\t\t</Text>\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\n\t\t\t\t\t<View>{children}</View>\n\t\t\t\t</Animated.View>\n\t\t\t</View>\n\t\t</RNModal>\n\t);\n}\n"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "name": "button",
+    "type": "registry:ui",
+    "dependencies": [
+      "{{UTILS_ALIAS}}",
+      "class-variance-authority"
+    ],
+    "registryDependencies": []
+  },
+  {
+    "name": "card",
+    "type": "registry:ui",
+    "dependencies": [
+      "{{UTILS_ALIAS}}"
+    ],
+    "registryDependencies": []
+  },
+  {
+    "name": "input",
+    "type": "registry:ui",
+    "dependencies": [
+      "{{UTILS_ALIAS}}"
+    ],
+    "registryDependencies": []
+  },
+  {
+    "name": "modal",
+    "type": "registry:ui",
+    "dependencies": [
+      "{{UTILS_ALIAS}}"
+    ],
+    "registryDependencies": []
+  }
+]

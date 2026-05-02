@@ -1,0 +1,23 @@
+{
+  "name": "button",
+  "type": "registry:ui",
+  "dependencies": [
+    "{{UTILS_ALIAS}}",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "ui/button.tsx",
+      "target": "components/ui/button.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from \"{{UTILS_ALIAS}}\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport type React from \"react\";\nimport { ActivityIndicator, Pressable, Text } from \"react-native\";\n\nconst buttonVariants = cva(\n\t\"flex-row items-center justify-center rounded-md px-4 py-2 active:opacity-80\",\n\t{\n\t\tvariants: {\n\t\t\tvariant: {\n\t\t\t\tdefault: \"bg-primary\",\n\t\t\t\tsecondary: \"bg-slate-100 dark:bg-slate-800\",\n\t\t\t\toutline: \"border border-slate-200 bg-transparent dark:border-slate-700\",\n\t\t\t\tghost: \"bg-transparent\",\n\t\t\t\tdanger: \"bg-red-500\",\n\t\t\t},\n\t\t\tsize: {\n\t\t\t\tdefault: \"h-10 px-4 py-2\",\n\t\t\t\tsm: \"h-9 rounded-md px-3\",\n\t\t\t\tlg: \"h-11 rounded-md px-8\",\n\t\t\t\ticon: \"h-10 w-10\",\n\t\t\t},\n\t\t},\n\t\tdefaultVariants: {\n\t\t\tvariant: \"default\",\n\t\t\tsize: \"default\",\n\t\t},\n\t},\n);\n\ninterface ButtonProps\n\textends React.ComponentPropsWithoutRef<typeof Pressable>,\n\t\tVariantProps<typeof buttonVariants> {\n\tlabel?: string;\n\tlabelClasses?: string;\n\tloading?: boolean;\n\tclassName?: string;\n\tchildren?: React.ReactNode;\n}\n\nfunction Button({\n\tclassName,\n\tvariant,\n\tsize,\n\tlabel,\n\tlabelClasses,\n\tloading,\n\tchildren,\n\t...props\n}: ButtonProps) {\n\treturn (\n\t\t<Pressable\n\t\t\tclassName={cn(buttonVariants({ variant, size, className }))}\n\t\t\taccessibilityRole=\"button\"\n\t\t\taccessibilityState={{\n\t\t\t\tdisabled: !!props.disabled || !!loading,\n\t\t\t\tbusy: !!loading,\n\t\t\t}}\n\t\t\taccessibilityLabel={props.accessibilityLabel || label}\n\t\t\t{...props}\n\t\t>\n\t\t\t{loading ? (\n\t\t\t\t<ActivityIndicator\n\t\t\t\t\tcolor={variant === \"default\" ? \"white\" : \"black\"}\n\t\t\t\t\taccessibilityLabel=\"Loading\"\n\t\t\t\t/>\n\t\t\t) : (\n\t\t\t\t<>\n\t\t\t\t\t{label && (\n\t\t\t\t\t\t<Text\n\t\t\t\t\t\t\tclassName={cn(\n\t\t\t\t\t\t\t\t\"text-sm font-medium\",\n\t\t\t\t\t\t\t\tvariant === \"default\"\n\t\t\t\t\t\t\t\t\t? \"text-white\"\n\t\t\t\t\t\t\t\t\t: \"text-black dark:text-white\",\n\t\t\t\t\t\t\t\tlabelClasses,\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{label}\n\t\t\t\t\t\t</Text>\n\t\t\t\t\t)}\n\t\t\t\t\t{children}\n\t\t\t\t</>\n\t\t\t)}\n\t\t</Pressable>\n\t);\n}\n\nexport { Button, buttonVariants };\n"
+    },
+    {
+      "path": "ui/button.stories.tsx",
+      "target": "components/ui/button.stories.tsx",
+      "type": "registry:story",
+      "content": "import React from \"react\";\nimport { View } from \"react-native\";\nimport { Button } from \"./button\";\n\nexport default {\n\ttitle: \"Components/Button\",\n\tcomponent: Button,\n};\n\nexport const Default = () => (\n\t<View style={{ padding: 20 }}>\n\t\t<Button label=\"Default Button\" />\n\t</View>\n);\n\nexport const Secondary = () => (\n\t<View style={{ padding: 20 }}>\n\t\t<Button variant=\"secondary\" label=\"Secondary Button\" />\n\t</View>\n);\n"
+    }
+  ]
+}
